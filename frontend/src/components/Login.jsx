@@ -13,6 +13,13 @@ function Login({ setIsLoggedIn }) {
   const [messageType, setMessageType] = useState("");
 
   // =========================
+  // BACKEND URL
+  // =========================
+
+  const API_URL =
+    "https://finance-tracker-4akw.onrender.com";
+
+  // =========================
   // LOGIN
   // =========================
 
@@ -20,46 +27,57 @@ function Login({ setIsLoggedIn }) {
 
     setMessage("");
 
-    const response = await fetch(
-      "http://127.0.0.1:8000/login",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: "anything",
-          email,
-          password,
-        }),
+    try {
+
+      const response = await fetch(
+        `${API_URL}/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: "anything",
+            email,
+            password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        localStorage.setItem(
+          "token",
+          data.access_token
+        );
+
+        localStorage.setItem(
+          "email",
+          email
+        );
+
+        setMessage("Login Successful");
+        setMessageType("success");
+
+        setTimeout(() => {
+          setIsLoggedIn(true);
+        }, 1000);
+
+      } else {
+
+        setMessage(data.detail || "Login Failed");
+        setMessageType("error");
+
       }
-    );
 
-    const data = await response.json();
+    } catch (error) {
 
-    if (response.ok) {
-
-      localStorage.setItem(
-        "token",
-        data.access_token
-      );
-
-      localStorage.setItem(
-        "email",
-        email
-      );
-
-      setMessage("Login Successful");
-      setMessageType("success");
-
-      setTimeout(() => {
-        setIsLoggedIn(true);
-      }, 1000);
-
-    } else {
-
-      setMessage(data.detail);
+      setMessage("Server Error");
       setMessageType("error");
+
+      console.log(error);
 
     }
   };
@@ -72,38 +90,49 @@ function Login({ setIsLoggedIn }) {
 
     setMessage("");
 
-    const response = await fetch(
-      "http://127.0.0.1:8000/register",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password,
-        }),
+    try {
+
+      const response = await fetch(
+        `${API_URL}/register`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username,
+            email,
+            password,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+
+        setMessage("Registration Successful");
+        setMessageType("success");
+
+        setIsRegister(false);
+
+        setUsername("");
+        setEmail("");
+        setPassword("");
+
+      } else {
+
+        setMessage(data.detail || "Registration Failed");
+        setMessageType("error");
+
       }
-    );
 
-    const data = await response.json();
+    } catch (error) {
 
-    if (response.ok) {
-
-      setMessage("Registration Successful");
-      setMessageType("success");
-
-      setIsRegister(false);
-
-      setUsername("");
-      setEmail("");
-      setPassword("");
-
-    } else {
-
-      setMessage("Registration Failed");
+      setMessage("Server Error");
       setMessageType("error");
+
+      console.log(error);
 
     }
   };
