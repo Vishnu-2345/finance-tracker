@@ -17,6 +17,9 @@ import {
 
 function App() {
 
+  const API_URL =
+    "https://finance-tracker-4akw.onrender.com";
+
   // =========================
   // AUTH STATE
   // =========================
@@ -86,7 +89,7 @@ function App() {
   ];
 
   // =========================
-  // REAL MONTHLY EXPENSE DATA
+  // MONTHLY EXPENSE DATA
   // =========================
 
   const monthlyExpenses = {};
@@ -138,7 +141,7 @@ function App() {
 
         const response =
           await fetch(
-            `http://127.0.0.1:8000/transactions/${localStorage.getItem("email")}`,
+            `${API_URL}/transactions/${localStorage.getItem("email")}`,
             {
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`
@@ -204,12 +207,10 @@ function App() {
 
       try {
 
-        // UPDATE
-
         if (isEditing) {
 
           await fetch(
-            `http://127.0.0.1:8000/transactions/${editId}`,
+            `${API_URL}/transactions/${editId}`,
             {
               method: "PUT",
               headers: {
@@ -229,10 +230,8 @@ function App() {
 
         } else {
 
-          // ADD
-
           await fetch(
-            "http://127.0.0.1:8000/transactions",
+            `${API_URL}/transactions`,
             {
               method: "POST",
               headers: {
@@ -248,8 +247,6 @@ function App() {
         }
 
         fetchTransactions();
-
-        // CLEAR FORM
 
         setTitle("");
         setAmount("");
@@ -273,7 +270,7 @@ function App() {
       try {
 
         await fetch(
-          `http://127.0.0.1:8000/transactions/${id}`,
+          `${API_URL}/transactions/${id}`,
           {
             method: "DELETE",
             headers: {
@@ -356,8 +353,6 @@ function App() {
 
       <div className="max-w-5xl mx-auto">
 
-        {/* HEADER */}
-
         <div className="flex justify-between items-center mb-10">
 
           <h1 className="text-5xl font-bold">
@@ -372,8 +367,6 @@ function App() {
           </button>
 
         </div>
-
-        {/* DASHBOARD */}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
 
@@ -410,285 +403,6 @@ function App() {
             <p className="text-3xl font-bold text-red-400">
               ₹{expense}
             </p>
-
-          </div>
-
-        </div>
-
-        {/* FORM */}
-
-        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
-
-          <h2 className="text-2xl font-bold mb-6">
-
-            {isEditing
-              ? "Edit Transaction"
-              : "Add Transaction"}
-
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            <input
-              type="text"
-              placeholder="Title"
-              value={title}
-              onChange={(e) =>
-                setTitle(
-                  e.target.value
-                )
-              }
-              className="p-3 rounded-lg bg-gray-700 outline-none"
-            />
-
-            <input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) =>
-                setAmount(
-                  e.target.value
-                )
-              }
-              className="p-3 rounded-lg bg-gray-700 outline-none"
-            />
-
-            <input
-              type="text"
-              placeholder="Category"
-              value={category}
-              onChange={(e) =>
-                setCategory(
-                  e.target.value
-                )
-              }
-              className="p-3 rounded-lg bg-gray-700 outline-none"
-            />
-
-            <select
-              value={type}
-              onChange={(e) =>
-                setType(
-                  e.target.value
-                )
-              }
-              className="p-3 rounded-lg bg-gray-700 outline-none"
-            >
-              <option value="expense">
-                Expense
-              </option>
-
-              <option value="income">
-                Income
-              </option>
-
-            </select>
-
-          </div>
-
-          <button
-            onClick={addTransaction}
-            className="mt-6 bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold"
-          >
-
-            {isEditing
-              ? "Update Transaction"
-              : "Add Transaction"}
-
-          </button>
-
-        </div>
-
-        {/* PIE CHART */}
-
-        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
-
-          <h2 className="text-2xl font-bold mb-6">
-            Financial Overview
-          </h2>
-
-          <div className="flex justify-center">
-
-            <PieChart
-              width={400}
-              height={300}
-            >
-
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                dataKey="value"
-                label
-              >
-
-                {chartData.map(
-                  (
-                    entry,
-                    index
-                  ) => (
-
-                    <Cell
-                      key={index}
-                      fill={
-                        COLORS[
-                          index %
-                            COLORS.length
-                        ]
-                      }
-                    />
-
-                  )
-                )}
-
-              </Pie>
-
-              <Tooltip />
-
-              <Legend />
-
-            </PieChart>
-
-          </div>
-
-        </div>
-
-        {/* REAL MONTHLY CHART */}
-
-        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
-
-          <h2 className="text-2xl font-bold mb-6">
-            Monthly Expenses
-          </h2>
-
-          <ResponsiveContainer
-            width="100%"
-            height={300}
-          >
-
-            <BarChart
-              data={monthlyData}
-            >
-
-              <CartesianGrid strokeDasharray="3 3" />
-
-              <XAxis dataKey="month" />
-
-              <YAxis />
-
-              <Tooltip />
-
-              <Bar
-                dataKey="expense"
-                fill="#ef4444"
-                radius={[
-                  10,
-                  10,
-                  0,
-                  0
-                ]}
-              />
-
-            </BarChart>
-
-          </ResponsiveContainer>
-
-        </div>
-
-        {/* TRANSACTIONS */}
-
-        <div>
-
-          <h2 className="text-3xl font-bold mb-6">
-            Transactions
-          </h2>
-
-          <div className="space-y-4">
-
-            {transactions.length === 0 ? (
-
-              <div className="bg-gray-800 p-6 rounded-2xl text-center text-gray-400">
-                No Transactions Added
-              </div>
-
-            ) : (
-
-              transactions.map(
-                (
-                  transaction
-                ) => (
-
-                  <div
-                    key={
-                      transaction.id
-                    }
-                    className="bg-gray-800 p-5 rounded-2xl shadow-lg flex justify-between items-center"
-                  >
-
-                    <div>
-
-                      <h3 className="text-xl font-semibold">
-                        {
-                          transaction.title
-                        }
-                      </h3>
-
-                      <p className="text-gray-400">
-                        Category:
-                        {" "}
-                        {
-                          transaction.category
-                        }
-                      </p>
-
-                      <p
-                        className={
-                          transaction.type ===
-                          "income"
-                            ? "text-green-400 text-lg font-semibold"
-                            : "text-red-400 text-lg font-semibold"
-                        }
-                      >
-                        ₹
-                        {
-                          transaction.amount
-                        }
-                      </p>
-
-                    </div>
-
-                    <div className="flex gap-3">
-
-                      <button
-                        onClick={() =>
-                          editTransaction(
-                            transaction
-                          )
-                        }
-                        className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-lg"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          deleteTransaction(
-                            transaction.id
-                          )
-                        }
-                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg"
-                      >
-                        Delete
-                      </button>
-
-                    </div>
-
-                  </div>
-
-                )
-              )
-            )}
 
           </div>
 
