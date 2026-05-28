@@ -47,19 +47,33 @@ function App() {
   const [isEditing, setIsEditing] = useState(false);
 
   // =========================
+  // SAFE ARRAY
+  // =========================
+
+  const safeTransactions = Array.isArray(transactions)
+    ? transactions
+    : [];
+
+  // =========================
   // CALCULATIONS
   // =========================
 
-  const income = transactions
-    .filter((transaction) => transaction.type === "income")
+  const income = safeTransactions
+    .filter(
+      (transaction) =>
+        transaction.type === "income"
+    )
     .reduce(
       (total, transaction) =>
         total + transaction.amount,
       0
     );
 
-  const expense = transactions
-    .filter((transaction) => transaction.type === "expense")
+  const expense = safeTransactions
+    .filter(
+      (transaction) =>
+        transaction.type === "expense"
+    )
     .reduce(
       (total, transaction) =>
         total + transaction.amount,
@@ -94,32 +108,34 @@ function App() {
 
   const monthlyExpenses = {};
 
-  transactions.forEach((transaction) => {
-
-    if (
-      transaction.type === "expense"
-    ) {
-
-      const date = new Date(
-        transaction.created_at
-      );
-
-      const month =
-        date.toLocaleString(
-          "default",
-          { month: "short" }
-        );
+  safeTransactions.forEach(
+    (transaction) => {
 
       if (
-        !monthlyExpenses[month]
+        transaction.type === "expense"
       ) {
-        monthlyExpenses[month] = 0;
-      }
 
-      monthlyExpenses[month] +=
-        transaction.amount;
+        const date = new Date(
+          transaction.created_at
+        );
+
+        const month =
+          date.toLocaleString(
+            "default",
+            { month: "short" }
+          );
+
+        if (
+          !monthlyExpenses[month]
+        ) {
+          monthlyExpenses[month] = 0;
+        }
+
+        monthlyExpenses[month] +=
+          transaction.amount;
+      }
     }
-  });
+  );
 
   const monthlyData =
     Object.keys(
@@ -143,21 +159,34 @@ function App() {
           await fetch(
             `${API_URL}/transactions/${localStorage.getItem("email")}`,
             {
+              method: "GET",
               headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+                Authorization:
+                  `Bearer ${localStorage.getItem("token")}`
               }
             }
           );
 
+        if (!response.ok) {
+          throw new Error(
+            "Failed to fetch transactions"
+          );
+        }
+
         const data =
           await response.json();
 
-        setTransactions(data);
+        if (Array.isArray(data)) {
+          setTransactions(data);
+        } else {
+          setTransactions([]);
+        }
 
       } catch (error) {
 
         console.log(error);
 
+        setTransactions([]);
       }
     };
 
@@ -196,7 +225,8 @@ function App() {
 
       const transactionData = {
         title,
-        amount: parseFloat(amount),
+        amount:
+          parseFloat(amount),
         category,
         type,
         user_email:
@@ -216,7 +246,8 @@ function App() {
               headers: {
                 "Content-Type":
                   "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+                Authorization:
+                  `Bearer ${localStorage.getItem("token")}`
               },
               body: JSON.stringify(
                 transactionData
@@ -237,7 +268,8 @@ function App() {
               headers: {
                 "Content-Type":
                   "application/json",
-                Authorization: `Bearer ${localStorage.getItem("token")}`
+                Authorization:
+                  `Bearer ${localStorage.getItem("token")}`
               },
               body: JSON.stringify(
                 transactionData
@@ -274,7 +306,8 @@ function App() {
           {
             method: "DELETE",
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`
+              Authorization:
+                `Bearer ${localStorage.getItem("token")}`
             }
           }
         );
@@ -292,24 +325,31 @@ function App() {
   // EDIT TRANSACTION
   // =========================
 
-  const editTransaction = (
-    transaction
-  ) => {
+  const editTransaction =
+    (transaction) => {
 
-    setTitle(transaction.title);
+      setTitle(
+        transaction.title
+      );
 
-    setAmount(transaction.amount);
+      setAmount(
+        transaction.amount
+      );
 
-    setCategory(
-      transaction.category
-    );
+      setCategory(
+        transaction.category
+      );
 
-    setType(transaction.type);
+      setType(
+        transaction.type
+      );
 
-    setEditId(transaction.id);
+      setEditId(
+        transaction.id
+      );
 
-    setIsEditing(true);
-  };
+      setIsEditing(true);
+    };
 
   // =========================
   // LOGOUT
@@ -353,6 +393,8 @@ function App() {
 
       <div className="max-w-5xl mx-auto">
 
+        {/* HEADER */}
+
         <div className="flex justify-between items-center mb-10">
 
           <h1 className="text-5xl font-bold">
@@ -367,6 +409,8 @@ function App() {
           </button>
 
         </div>
+
+        {/* DASHBOARD */}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
 
@@ -403,6 +447,286 @@ function App() {
             <p className="text-3xl font-bold text-red-400">
               ₹{expense}
             </p>
+
+          </div>
+
+        </div>
+
+        {/* FORM */}
+
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+          <h2 className="text-2xl font-bold mb-6">
+
+            {isEditing
+              ? "Edit Transaction"
+              : "Add Transaction"}
+
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <input
+              type="text"
+              placeholder="Title"
+              value={title}
+              onChange={(e) =>
+                setTitle(
+                  e.target.value
+                )
+              }
+              className="p-3 rounded-lg bg-gray-700 outline-none"
+            />
+
+            <input
+              type="number"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) =>
+                setAmount(
+                  e.target.value
+                )
+              }
+              className="p-3 rounded-lg bg-gray-700 outline-none"
+            />
+
+            <input
+              type="text"
+              placeholder="Category"
+              value={category}
+              onChange={(e) =>
+                setCategory(
+                  e.target.value
+                )
+              }
+              className="p-3 rounded-lg bg-gray-700 outline-none"
+            />
+
+            <select
+              value={type}
+              onChange={(e) =>
+                setType(
+                  e.target.value
+                )
+              }
+              className="p-3 rounded-lg bg-gray-700 outline-none"
+            >
+
+              <option value="expense">
+                Expense
+              </option>
+
+              <option value="income">
+                Income
+              </option>
+
+            </select>
+
+          </div>
+
+          <button
+            onClick={addTransaction}
+            className="mt-6 bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-xl font-semibold"
+          >
+
+            {isEditing
+              ? "Update Transaction"
+              : "Add Transaction"}
+
+          </button>
+
+        </div>
+
+        {/* PIE CHART */}
+
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+          <h2 className="text-2xl font-bold mb-6">
+            Financial Overview
+          </h2>
+
+          <div className="flex justify-center">
+
+            <PieChart
+              width={400}
+              height={300}
+            >
+
+              <Pie
+                data={chartData}
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                dataKey="value"
+                label
+              >
+
+                {chartData.map(
+                  (
+                    entry,
+                    index
+                  ) => (
+
+                    <Cell
+                      key={index}
+                      fill={
+                        COLORS[
+                          index %
+                            COLORS.length
+                        ]
+                      }
+                    />
+
+                  )
+                )}
+
+              </Pie>
+
+              <Tooltip />
+
+              <Legend />
+
+            </PieChart>
+
+          </div>
+
+        </div>
+
+        {/* MONTHLY CHART */}
+
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+          <h2 className="text-2xl font-bold mb-6">
+            Monthly Expenses
+          </h2>
+
+          <ResponsiveContainer
+            width="100%"
+            height={300}
+          >
+
+            <BarChart
+              data={monthlyData}
+            >
+
+              <CartesianGrid strokeDasharray="3 3" />
+
+              <XAxis dataKey="month" />
+
+              <YAxis />
+
+              <Tooltip />
+
+              <Bar
+                dataKey="expense"
+                fill="#ef4444"
+                radius={[
+                  10,
+                  10,
+                  0,
+                  0
+                ]}
+              />
+
+            </BarChart>
+
+          </ResponsiveContainer>
+
+        </div>
+
+        {/* TRANSACTIONS */}
+
+        <div>
+
+          <h2 className="text-3xl font-bold mb-6">
+            Transactions
+          </h2>
+
+          <div className="space-y-4">
+
+            {safeTransactions.length === 0 ? (
+
+              <div className="bg-gray-800 p-6 rounded-2xl text-center text-gray-400">
+                No Transactions Added
+              </div>
+
+            ) : (
+
+              safeTransactions.map(
+                (
+                  transaction
+                ) => (
+
+                  <div
+                    key={
+                      transaction.id
+                    }
+                    className="bg-gray-800 p-5 rounded-2xl shadow-lg flex justify-between items-center"
+                  >
+
+                    <div>
+
+                      <h3 className="text-xl font-semibold">
+                        {
+                          transaction.title
+                        }
+                      </h3>
+
+                      <p className="text-gray-400">
+                        Category:
+                        {" "}
+                        {
+                          transaction.category
+                        }
+                      </p>
+
+                      <p
+                        className={
+                          transaction.type ===
+                          "income"
+                            ? "text-green-400 text-lg font-semibold"
+                            : "text-red-400 text-lg font-semibold"
+                        }
+                      >
+                        ₹
+                        {
+                          transaction.amount
+                        }
+                      </p>
+
+                    </div>
+
+                    <div className="flex gap-3">
+
+                      <button
+                        onClick={() =>
+                          editTransaction(
+                            transaction
+                          )
+                        }
+                        className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-lg"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          deleteTransaction(
+                            transaction.id
+                          )
+                        }
+                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg"
+                      >
+                        Delete
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                )
+              )
+            )}
 
           </div>
 
