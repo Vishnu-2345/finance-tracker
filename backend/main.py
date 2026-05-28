@@ -196,33 +196,28 @@ def update_transaction(
 
 def register(user: User):
 
+    db = SessionLocal()
+
     hashed_password = pwd_context.hash(
         user.password
     )
 
-    connection = engine.raw_connection()
-
-    cursor = connection.cursor()
-
     query = """
     INSERT INTO users
     (username, email, password)
-    VALUES (%s, %s, %s)
+    VALUES (?, ?, ?)
     """
 
-    values = (
-        user.username,
-        user.email,
-        hashed_password
+    db.connection().connection.execute(
+        query,
+        (
+            user.username,
+            user.email,
+            hashed_password
+        )
     )
 
-    cursor.execute(query, values)
-
-    connection.commit()
-
-    cursor.close()
-
-    connection.close()
+    db.commit()
 
     return {
         "message": "User registered successfully"
@@ -236,33 +231,32 @@ def register(user: User):
 
 def login(user: User):
 
-    connection = engine.raw_connection()
-
-    cursor = connection.cursor()
+    db = SessionLocal()
 
     query = """
     SELECT * FROM users
-    WHERE email = %s
+    WHERE email = ?
     """
 
-    cursor.execute(query, (user.email,))
+    cursor = db.connection().connection.execute(
+        query,
+        (user.email,)
+    )
 
     existing_user = cursor.fetchone()
 
-    cursor.close()
-
-    connection.close()
-
     # USER NOT FOUND
+
     if not existing_user:
 
         return {
-            "message": "User not found"
+            "detail": "User not found"
         }
 
     stored_password = existing_user[3]
 
     # VERIFY PASSWORD
+
     password_correct = pwd_context.verify(
         user.password,
         stored_password
@@ -271,16 +265,16 @@ def login(user: User):
     if not password_correct:
 
         return {
-            "message": "Incorrect password"
+            "detail": "Incorrect password"
         }
 
     # TOKEN DATA
+
     token_data = {
         "sub": user.email,
         "exp": datetime.utcnow() + timedelta(hours=1)
     }
 
-    # CREATE JWT TOKEN
     token = jwt.encode(
         token_data,
         SECRET_KEY,
