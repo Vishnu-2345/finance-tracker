@@ -18,7 +18,7 @@ import {
 function App() {
 
   const API_URL =
-    "https://finance-tracker-4akw.onrender.com";
+    "http://127.0.0.1:8000";
 
   // =========================
   // AUTH STATE
@@ -33,6 +33,17 @@ function App() {
   // =========================
 
   const [transactions, setTransactions] = useState([]);
+  
+  const [budgets, setBudgets] = useState([]);
+  const [goals, setGoals] = useState([]);
+
+  const [goalName, setGoalName] = useState("");
+
+  const [targetAmount, setTargetAmount] = useState("");
+
+  const [budgetCategory, setBudgetCategory] = useState("");
+
+  const [budgetAmount, setBudgetAmount] = useState("");
 
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -81,10 +92,65 @@ function App() {
     );
 
   const balance = income - expense;
+  const currentSavings = balance > 0 ? balance : 0;
+  const budgetWarnings = budgets.map((budget) => {
+
+  const spent = safeTransactions
+    .filter(
+      (transaction) =>
+        (transaction.type || "").toLowerCase() === "expense" &&
+        (transaction.category || "").toLowerCase() ===
+        budget.category.toLowerCase()
+    )
+    .reduce(
+      (total, transaction) =>
+        total + transaction.amount,
+      0
+    );
+
+  return {
+    category: budget.category,
+    budget: budget.budget_amount,
+    spent,
+    exceeded:
+      spent > budget.budget_amount
+  };
+});
 
   // =========================
   // PIE CHART DATA
   // =========================
+  const categoryData = Object.values(
+
+  safeTransactions
+    .filter(
+      (transaction) =>
+        (transaction.type || "").toLowerCase() ===
+        "expense"
+    )
+
+    .reduce((acc, transaction) => {
+
+      const category =
+        transaction.category;
+
+      if (!acc[category]) {
+
+        acc[category] = {
+          name: category,
+          value: 0
+        };
+
+      }
+
+      acc[category].value +=
+        transaction.amount;
+
+      return acc;
+
+    }, {})
+
+);
 
   const chartData = [
     {
@@ -98,10 +164,15 @@ function App() {
   ];
 
   const COLORS = [
-    "#22c55e",
-    "#ef4444"
-  ];
-
+  "#22c55e",
+  "#ef4444",
+  "#3b82f6",
+  "#f59e0b",
+  "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
+  "#f97316"
+];
   // =========================
   // MONTHLY EXPENSE DATA
   // =========================
@@ -145,6 +216,25 @@ function App() {
       expense:
         monthlyExpenses[month]
     }));
+
+  const fetchBudgets = async () => {
+    try {
+      
+      const response =
+      await fetch(
+        `${API_URL}/budgets/${localStorage.getItem("email")}`
+      );
+      
+      const data =
+      await response.json();
+
+      setBudgets(data);
+
+  } catch (error) {
+    console.log(error);
+
+  }
+};
 
   // =========================
   // FETCH TRANSACTIONS
@@ -198,6 +288,8 @@ function App() {
 
     if (isLoggedIn) {
       fetchTransactions();
+      fetchBudgets();
+      fetchGoals();
     }
 
   }, [isLoggedIn]);
@@ -292,6 +384,113 @@ function App() {
       }
     };
 
+
+    const addBudget = async () => {
+
+  if (
+    !budgetCategory ||
+    !budgetAmount
+  ) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const budgetData = {
+    category: budgetCategory,
+    budget_amount: parseFloat(budgetAmount),
+    user_email: localStorage.getItem("email")
+  };
+
+  try {
+
+    await fetch(
+      `${API_URL}/budgets`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify(budgetData)
+      }
+    );
+
+    setBudgetCategory("");
+    setBudgetAmount("");
+
+    fetchBudgets();
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+};
+
+const addGoal = async () => {
+
+  if (
+    !goalName ||
+    !targetAmount
+  ) {
+    alert("Fill all fields");
+    return;
+  }
+
+  const goalData = {
+    goal_name: goalName,
+    target_amount: parseFloat(targetAmount),
+    user_email: localStorage.getItem("email")
+  };
+
+  try {
+
+    await fetch(
+      `${API_URL}/goals`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify(goalData)
+      }
+    );
+
+    setGoalName("");
+    setTargetAmount("");
+
+    fetchGoals();
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+};
+
+
+const fetchGoals = async () => {
+
+  try {
+
+    const response =
+      await fetch(
+        `${API_URL}/goals/${localStorage.getItem("email")}`
+      );
+
+    const data =
+      await response.json();
+
+    setGoals(data);
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+};
   // =========================
   // DELETE TRANSACTION
   // =========================
@@ -537,6 +736,112 @@ function App() {
 
         </div>
 
+        {/* BUDGETS */}
+
+<div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+  <h2 className="text-2xl font-bold mb-6">
+    Budget Management
+  </h2>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+    <input
+      type="text"
+      placeholder="Budget Category"
+      value={budgetCategory}
+      onChange={(e) =>
+        setBudgetCategory(
+          e.target.value
+        )
+      }
+      className="p-3 rounded-lg bg-gray-700 outline-none"
+    />
+
+    <input
+      type="number"
+      placeholder="Budget Amount"
+      value={budgetAmount}
+      onChange={(e) =>
+        setBudgetAmount(
+          e.target.value
+        )
+      }
+      className="p-3 rounded-lg bg-gray-700 outline-none"
+    />
+
+  </div>
+
+  <button
+    onClick={addBudget}
+    className="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-xl"
+  >
+    Add Budget
+  </button>
+
+  <div className="mt-6 space-y-3">
+
+    {budgets.map((budget) => (
+
+      <div
+        key={budget.id}
+        className="bg-gray-700 p-4 rounded-xl"
+      >
+
+        <p className="font-semibold">
+          {budget.category}
+        </p>
+
+        <p className="text-green-400">
+          ₹{budget.budget_amount}
+        </p>
+
+      </div>
+
+    ))}
+
+  </div>
+  <div className="mt-6">
+
+  <h3 className="text-xl font-bold mb-3">
+    Budget Status
+  </h3>
+
+  {budgetWarnings.map((item) => (
+
+    <div
+      key={item.category}
+      className="mb-3"
+    >
+
+      {item.exceeded ? (
+
+        <div className="bg-red-900 p-3 rounded-lg">
+
+          ⚠ {item.category} Budget Exceeded by ₹
+          {Math.round(item.spent - item.budget)}
+
+        </div>
+
+      ) : (
+
+        <div className="bg-green-900 p-3 rounded-lg">
+
+          ✓ {item.category} Budget Remaining ₹
+          {Math.round(item.budget - item.spent)}
+
+        </div>
+
+      )}
+
+    </div>
+
+  ))}
+
+</div>
+
+</div>
+
         {/* PIE CHART */}
 
         <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
@@ -633,6 +938,55 @@ function App() {
           </ResponsiveContainer>
 
         </div>
+
+        <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mt-10">
+
+  <h2 className="text-2xl font-bold mb-6">
+    Expense Category Analytics
+  </h2>
+
+  <ResponsiveContainer
+    width="100%"
+    height={350}
+  >
+
+    <PieChart>
+
+      <Pie
+      data={categoryData}
+      dataKey="value"
+      nameKey="name"
+      outerRadius={120}
+      label={({ name, value }) =>
+      `${name}: ₹${value}`
+  }
+>
+
+        {categoryData.map(
+          (_, index) => (
+            <Cell
+              key={index}
+              fill={
+                COLORS[
+                  index %
+                  COLORS.length
+                ]
+              }
+            />
+          )
+        )}
+
+      </Pie>
+
+      <Tooltip />
+
+      <Legend />
+
+    </PieChart>
+
+  </ResponsiveContainer>
+
+</div>
 
         {/* TRANSACTIONS */}
 
