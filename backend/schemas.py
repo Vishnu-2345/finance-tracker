@@ -11,3 +11,19 @@ class TransactionCreate(BaseModel):
     type: str
 
     user_email: str
+
+class BudgetCreate(BaseModel):
+
+    category: str
+
+    budget_amount: float
+
+    user_email: str
+
+class SavingsGoalCreate(BaseModel):
+
+    goal_name: str
+
+    target_amount: float
+
+    user_email: str

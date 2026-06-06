@@ -42,3 +42,37 @@ class UserDB(Base):
     email = Column(String(100), unique=True)
 
     password = Column(String(200))
+
+
+# ====================================
+# BUDGETS TABLE
+# ====================================
+
+class Budget(Base):
+
+    __tablename__ = "budgets"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    category = Column(String(100))
+
+    budget_amount = Column(Float)
+
+    user_email = Column(String(100))
+
+
+# ====================================
+# SAVINGS GOALS TABLE
+# ====================================
+
+class SavingsGoal(Base):
+
+    __tablename__ = "savings_goals"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    goal_name = Column(String(100))
+
+    target_amount = Column(Float)
+
+    user_email = Column(String(100))

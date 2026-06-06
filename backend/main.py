@@ -9,8 +9,12 @@ from jose import jwt
 from datetime import datetime, timedelta
 
 from database import engine, SessionLocal
-from models import Base, Transaction
-from schemas import TransactionCreate
+from models import Base, Transaction, Budget, SavingsGoal
+from schemas import (
+    TransactionCreate,
+    BudgetCreate,
+    SavingsGoalCreate
+)
 
 # ====================================
 # APP SETUP
@@ -285,3 +289,117 @@ def login(user: User):
         "access_token": token,
         "token_type": "bearer"
     }
+
+# ====================================
+# ADD BUDGET
+# ====================================
+
+@app.post("/budgets")
+
+def add_budget(budget: BudgetCreate):
+
+    db = SessionLocal()
+
+    new_budget = Budget(
+        category=budget.category,
+        budget_amount=budget.budget_amount,
+        user_email=budget.user_email
+    )
+
+    db.add(new_budget)
+
+    db.commit()
+
+    db.refresh(new_budget)
+
+    return {
+        "message": "Budget added successfully"
+    }
+
+# ====================================
+# GET USER BUDGETS
+# ====================================
+
+@app.get("/budgets/{email}")
+
+def get_budgets(email: str):
+
+    db = SessionLocal()
+
+    budgets = db.query(Budget).filter(
+        Budget.user_email == email
+    ).all()
+
+    return budgets
+
+# ====================================
+# DELETE BUDGET
+# ====================================
+
+@app.delete("/budgets/{budget_id}")
+
+def delete_budget(budget_id: int):
+
+    db = SessionLocal()
+
+    budget = db.query(Budget).filter(
+        Budget.id == budget_id
+    ).first()
+
+    if budget:
+
+        db.delete(budget)
+
+        db.commit()
+
+        return {
+            "message": "Budget deleted"
+        }
+
+    return {
+        "message": "Budget not found"
+    }
+
+# ====================================
+# ADD SAVINGS GOAL
+# ====================================
+
+@app.post("/goals")
+
+def add_goal(goal: SavingsGoalCreate):
+
+    db = SessionLocal()
+
+    new_goal = SavingsGoal(
+        goal_name=goal.goal_name,
+        target_amount=goal.target_amount,
+        user_email=goal.user_email
+    )
+
+    db.add(new_goal)
+
+    db.commit()
+
+    db.refresh(new_goal)
+
+    return {
+        "message": "Goal added"
+    }
+
+# ====================================
+# GET GOALS
+# ====================================
+
+@app.get("/goals/{email}")
+
+def get_goals(email: str):
+
+    db = SessionLocal()
+
+    goals = db.query(
+        SavingsGoal
+    ).filter(
+        SavingsGoal.user_email == email
+    ).all()
+
+    return goals
