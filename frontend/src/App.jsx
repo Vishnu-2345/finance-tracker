@@ -18,7 +18,7 @@ import {
 function App() {
 
   const API_URL =
-    "http://127.0.0.1:8000";
+    "https://finance-tracker-4akw.onrender.com";
 
   // =========================
   // AUTH STATE
