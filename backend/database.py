@@ -5,9 +5,9 @@ DATABASE_URL = "sqlite:///./finance.db"
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False}
+    connect_args={"check_same_thread": False},
+    pool_pre_ping=True
 )
-
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,

@@ -85,87 +85,95 @@ def home():
 # ====================================
 
 @app.post("/transactions")
-
 def add_transaction(transaction: TransactionCreate):
 
     db = SessionLocal()
 
-    new_transaction = Transaction(
-        title=transaction.title,
-        amount=transaction.amount,
-        category=transaction.category,
-        type=transaction.type,
-        user_email=transaction.user_email
-    )
+    try:
 
-    db.add(new_transaction)
+        new_transaction = Transaction(
+            title=transaction.title,
+            amount=transaction.amount,
+            category=transaction.category,
+            type=transaction.type,
+            user_email=transaction.user_email
+        )
 
-    db.commit()
+        db.add(new_transaction)
+        db.commit()
+        db.refresh(new_transaction)
 
-    db.refresh(new_transaction)
-
-    return {
-        "message": "Transaction added successfully",
-        "data": {
-            "id": new_transaction.id,
-            "title": new_transaction.title,
-            "amount": new_transaction.amount,
-            "category": new_transaction.category,
-            "type": new_transaction.type,
-            "user_email": new_transaction.user_email
+        return {
+            "message": "Transaction added successfully",
+            "data": {
+                "id": new_transaction.id,
+                "title": new_transaction.title,
+                "amount": new_transaction.amount,
+                "category": new_transaction.category,
+                "type": new_transaction.type,
+                "user_email": new_transaction.user_email
+            }
         }
-    }
+
+    finally:
+        db.close()
 
 # ====================================
 # GET USER TRANSACTIONS
 # ====================================
 
 @app.get("/transactions/{email}")
-
 def get_transactions(email: str):
 
     db = SessionLocal()
 
-    transactions = db.query(Transaction).filter(
-        Transaction.user_email == email
-    ).all()
+    try:
 
-    return transactions
+        transactions = db.query(Transaction).filter(
+            Transaction.user_email == email
+        ).all()
+
+        return transactions
+
+    finally:
+        db.close()
 
 # ====================================
 # DELETE TRANSACTION
 # ====================================
 
 @app.delete("/transactions/{transaction_id}")
-
 def delete_transaction(transaction_id: int):
 
     db = SessionLocal()
 
-    transaction = db.query(Transaction).filter(
-        Transaction.id == transaction_id
-    ).first()
+    try:
 
-    if transaction:
+        transaction = db.query(Transaction).filter(
+            Transaction.id == transaction_id
+        ).first()
 
-        db.delete(transaction)
+        if transaction:
 
-        db.commit()
+            db.delete(transaction)
+            db.commit()
+
+            return {
+                "message": "Transaction deleted"
+            }
 
         return {
-            "message": "Transaction deleted"
+            "message": "Transaction not found"
         }
 
-    return {
-        "message": "Transaction not found"
-    }
+    finally:
+        db.close()
 
 # ====================================
 # UPDATE TRANSACTION
 # ====================================
 
 @app.put("/transactions/{transaction_id}")
-
 def update_transaction(
     transaction_id: int,
     transaction: TransactionCreate
@@ -173,236 +181,261 @@ def update_transaction(
 
     db = SessionLocal()
 
-    existing_transaction = db.query(Transaction).filter(
-        Transaction.id == transaction_id
-    ).first()
+    try:
 
-    if not existing_transaction:
+        existing_transaction = db.query(Transaction).filter(
+            Transaction.id == transaction_id
+        ).first()
+
+        if not existing_transaction:
+
+            return {
+                "message": "Transaction not found"
+            }
+
+        existing_transaction.title = transaction.title
+        existing_transaction.amount = transaction.amount
+        existing_transaction.category = transaction.category
+        existing_transaction.type = transaction.type
+        existing_transaction.user_email = transaction.user_email
+
+        db.commit()
 
         return {
-            "message": "Transaction not found"
+            "message": "Transaction updated successfully"
         }
 
-    existing_transaction.title = transaction.title
-    existing_transaction.amount = transaction.amount
-    existing_transaction.category = transaction.category
-    existing_transaction.type = transaction.type
-    existing_transaction.user_email = transaction.user_email
+    finally:
+        db.close()
 
-    db.commit()
 
-    return {
-        "message": "Transaction updated successfully"
-    }
 
 # ====================================
 # REGISTER USER
 # ====================================
 
 @app.post("/register")
-
 def register(user: User):
 
     db = SessionLocal()
 
-    hashed_password = pwd_context.hash(
-        user.password
-    )
+    try:
 
-    query = """
-    INSERT INTO users
-    (username, email, password)
-    VALUES (?, ?, ?)
-    """
-
-    db.connection().connection.execute(
-        query,
-        (
-            user.username,
-            user.email,
-            hashed_password
+        hashed_password = pwd_context.hash(
+            user.password
         )
-    )
 
-    db.commit()
+        query = """
+        INSERT INTO users
+        (username, email, password)
+        VALUES (?, ?, ?)
+        """
 
-    return {
-        "message": "User registered successfully"
-    }
+        db.connection().connection.execute(
+            query,
+            (
+                user.username,
+                user.email,
+                hashed_password
+            )
+        )
+
+        db.commit()
+
+        return {
+            "message": "User registered successfully"
+        }
+
+    finally:
+        db.close()
+
 
 # ====================================
 # LOGIN USER
 # ====================================
 
 @app.post("/login")
-
 def login(user: User):
 
     db = SessionLocal()
 
-    query = """
-    SELECT * FROM users
-    WHERE email = ?
-    """
+    try:
 
-    cursor = db.connection().connection.execute(
-        query,
-        (user.email,)
-    )
+        query = """
+        SELECT * FROM users
+        WHERE email = ?
+        """
 
-    existing_user = cursor.fetchone()
+        cursor = db.connection().connection.execute(
+            query,
+            (user.email,)
+        )
 
-    # USER NOT FOUND
+        existing_user = cursor.fetchone()
 
-    if not existing_user:
+        if not existing_user:
 
-        return {
-            "detail": "User not found"
+            return {
+                "detail": "User not found"
+            }
+
+        stored_password = existing_user[3]
+
+        password_correct = pwd_context.verify(
+            user.password,
+            stored_password
+        )
+
+        if not password_correct:
+
+            return {
+                "detail": "Incorrect password"
+            }
+
+        token_data = {
+            "sub": user.email,
+            "exp": datetime.utcnow() + timedelta(hours=1)
         }
 
-    stored_password = existing_user[3]
-
-    # VERIFY PASSWORD
-
-    password_correct = pwd_context.verify(
-        user.password,
-        stored_password
-    )
-
-    if not password_correct:
+        token = jwt.encode(
+            token_data,
+            SECRET_KEY,
+            algorithm=ALGORITHM
+        )
 
         return {
-            "detail": "Incorrect password"
+            "access_token": token,
+            "token_type": "bearer"
         }
 
-    # TOKEN DATA
-
-    token_data = {
-        "sub": user.email,
-        "exp": datetime.utcnow() + timedelta(hours=1)
-    }
-
-    token = jwt.encode(
-        token_data,
-        SECRET_KEY,
-        algorithm=ALGORITHM
-    )
-
-    return {
-        "access_token": token,
-        "token_type": "bearer"
-    }
+    finally:
+        db.close()
 
 # ====================================
 # ADD BUDGET
 # ====================================
 
 @app.post("/budgets")
-
 def add_budget(budget: BudgetCreate):
 
     db = SessionLocal()
 
-    new_budget = Budget(
-        category=budget.category,
-        budget_amount=budget.budget_amount,
-        user_email=budget.user_email
-    )
+    try:
 
-    db.add(new_budget)
+        new_budget = Budget(
+            category=budget.category,
+            budget_amount=budget.budget_amount,
+            user_email=budget.user_email
+        )
 
-    db.commit()
+        db.add(new_budget)
+        db.commit()
+        db.refresh(new_budget)
 
-    db.refresh(new_budget)
+        return {
+            "message": "Budget added successfully"
+        }
 
-    return {
-        "message": "Budget added successfully"
-    }
+    finally:
+        db.close()
 
 # ====================================
 # GET USER BUDGETS
 # ====================================
 
 @app.get("/budgets/{email}")
-
 def get_budgets(email: str):
 
     db = SessionLocal()
 
-    budgets = db.query(Budget).filter(
-        Budget.user_email == email
-    ).all()
+    try:
 
-    return budgets
+        budgets = db.query(Budget).filter(
+            Budget.user_email == email
+        ).all()
+
+        return budgets
+
+    finally:
+        db.close()
 
 # ====================================
 # DELETE BUDGET
 # ====================================
 
 @app.delete("/budgets/{budget_id}")
-
 def delete_budget(budget_id: int):
 
     db = SessionLocal()
 
-    budget = db.query(Budget).filter(
-        Budget.id == budget_id
-    ).first()
+    try:
 
-    if budget:
+        budget = db.query(Budget).filter(
+            Budget.id == budget_id
+        ).first()
 
-        db.delete(budget)
+        if budget:
 
-        db.commit()
+            db.delete(budget)
+            db.commit()
+
+            return {
+                "message": "Budget deleted"
+            }
 
         return {
-            "message": "Budget deleted"
+            "message": "Budget not found"
         }
 
-    return {
-        "message": "Budget not found"
-    }
+    finally:
+        db.close()
 
 # ====================================
 # ADD SAVINGS GOAL
 # ====================================
 
 @app.post("/goals")
-
 def add_goal(goal: SavingsGoalCreate):
 
     db = SessionLocal()
 
-    new_goal = SavingsGoal(
-        goal_name=goal.goal_name,
-        target_amount=goal.target_amount,
-        user_email=goal.user_email
-    )
+    try:
 
-    db.add(new_goal)
+        new_goal = SavingsGoal(
+            goal_name=goal.goal_name,
+            target_amount=goal.target_amount,
+            user_email=goal.user_email
+        )
 
-    db.commit()
+        db.add(new_goal)
+        db.commit()
+        db.refresh(new_goal)
 
-    db.refresh(new_goal)
+        return {
+            "message": "Goal added"
+        }
 
-    return {
-        "message": "Goal added"
-    }
+    finally:
+        db.close()
 
 # ====================================
 # GET GOALS
 # ====================================
 
 @app.get("/goals/{email}")
-
 def get_goals(email: str):
 
     db = SessionLocal()
 
-    goals = db.query(
-        SavingsGoal
-    ).filter(
-        SavingsGoal.user_email == email
-    ).all()
+    try:
 
-    return goals
+        goals = db.query(
+            SavingsGoal
+        ).filter(
+            SavingsGoal.user_email == email
+        ).all()
+
+        return goals
+
+    finally:
+        db.close()
