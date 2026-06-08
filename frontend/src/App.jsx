@@ -54,6 +54,10 @@ function App() {
   const [search, setSearch] = useState("");
   const [frequency, setFrequency] =
   useState("One Time");
+  const [aiAdvice, setAiAdvice] = useState("");
+
+  const [loadingAdvice, setLoadingAdvice] =
+  useState(false);
  
   // =========================
   // EDIT STATES
@@ -98,6 +102,42 @@ function App() {
 
   const balance = income - expense;
   const currentSavings = balance > 0 ? balance : 0;
+  const savingsRate =
+  income > 0
+    ? ((income - expense) / income) * 100
+    : 0;
+
+const largestTransaction =
+  Math.max(
+    ...safeTransactions.map(
+      (t) => t.amount
+    ),
+    0
+  );
+
+const categoryTotals = {};
+
+safeTransactions.forEach((t) => {
+
+  if (t.type === "expense") {
+
+    categoryTotals[t.category] =
+      (categoryTotals[t.category] || 0)
+      + t.amount;
+
+  }
+
+});
+
+const highestCategory =
+  Object.keys(categoryTotals)
+    .length > 0
+    ? Object.entries(categoryTotals)
+        .sort(
+          (a, b) =>
+            b[1] - a[1]
+        )[0][0]
+    : "None";
   const budgetWarnings = budgets.map((budget) => {
 
   const spent = safeTransactions
@@ -603,6 +643,56 @@ const exportToExcel = () => {
 
 };
 
+const getAiAdvice = async () => {
+
+  try {
+
+    setLoadingAdvice(true);
+
+    const response =
+      await fetch(
+        `${API_URL}/ai-advice`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+          body: JSON.stringify({
+            income,
+            expense,
+            savings_rate:
+              savingsRate,
+            highest_category:
+              highestCategory,
+            goal_name:
+              goals[0]?.goal_name ||
+              "No Goal",
+            goal_amount:
+              goals[0]?.target_amount ||
+              0
+          })
+        }
+      );
+
+    const data =
+      await response.json();
+
+    setAiAdvice(
+      data.advice
+    );
+
+  } catch (error) {
+
+    console.log(error);
+
+  } finally {
+
+    setLoadingAdvice(false);
+
+  }
+
+};
   // =========================
   // LOGOUT
   // =========================
@@ -1019,9 +1109,78 @@ const exportToExcel = () => {
 
 {/* PIE CHART */}
 
-        {/* PIE CHART */}
+       
 
         <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+  <h2 className="text-2xl font-bold mb-6">
+    Financial Insights
+  </h2>
+  <button
+  onClick={getAiAdvice}
+  className="
+    bg-purple-600
+    hover:bg-purple-700
+    px-4
+    py-2
+    rounded-lg
+    mb-4
+  "
+>
+  Get AI Advice
+</button>
+
+{
+  loadingAdvice && (
+    <p className="mb-4">
+      Generating advice...
+    </p>
+  )
+}
+
+{
+  aiAdvice && (
+    <div
+      className="
+        bg-gray-700
+        p-4
+        rounded-lg
+        mb-4
+        whitespace-pre-line
+      "
+    >
+
+      <h3 className="font-bold mb-2">
+        AI Financial Advice
+      </h3>
+
+      <p>{aiAdvice}</p>
+
+    </div>
+  )
+}
+
+  <div className="space-y-4">
+
+    <p>
+      Highest Expense Category: {highestCategory}
+    </p>
+
+    <p>
+      Total Transactions: {transactions.length}
+    </p>
+
+    <p>
+      Savings Rate: {savingsRate.toFixed(2)}%
+    </p>
+
+    <p>
+      Largest Transaction: ₹{largestTransaction}
+    </p>
+
+  </div>
+
+</div>
 
           <h2 className="text-2xl font-bold mb-6">
             Financial Overview
@@ -1277,7 +1436,7 @@ const exportToExcel = () => {
 
       </div>
 
-    </div>
+
   );
 }
 

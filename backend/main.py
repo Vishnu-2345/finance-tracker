@@ -20,7 +20,19 @@ from schemas import (
     TransactionCreate,
     BudgetCreate,
     SavingsGoalCreate,
-    RecurringTransactionCreate
+    RecurringTransactionCreate,
+    AdviceRequest
+)
+
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+genai.configure(
+    api_key=os.getenv("GEMINI_API_KEY")
 )
 
 # ====================================
@@ -512,3 +524,68 @@ def get_recurring(email: str):
     finally:
 
         db.close()
+
+
+
+@app.post("/ai-advice")
+def get_ai_advice(data: AdviceRequest):
+
+    try:
+
+        model = genai.GenerativeModel(
+            "gemini-2.0-flash"
+        )
+
+        prompt = f"""
+        You are a personal finance advisor.
+
+        Income: ₹{data.income}
+        Expenses: ₹{data.expense}
+
+        Savings Rate:
+        {data.savings_rate}%
+
+        Highest Spending Category:
+        {data.highest_category}
+
+        Savings Goal:
+        {data.goal_name}
+
+        Goal Amount:
+        ₹{data.goal_amount}
+
+        Give:
+        1. Spending analysis
+        2. Savings suggestion
+        3. Goal recommendation
+        4. Financial tip
+
+        Keep answer under 150 words.
+        """
+
+        response = model.generate_content(
+            prompt
+        )
+
+        return {
+            "advice": response.text
+        }
+
+    except Exception:
+
+        advice = f"""
+Savings Rate: {data.savings_rate}%
+
+Your highest spending category is {data.highest_category}.
+
+Try reducing expenses in this category by 10-15%.
+
+Continue saving toward your goal:
+{data.goal_name} (₹{data.goal_amount})
+
+Maintain an emergency fund and invest regularly.
+"""
+
+        return {
+            "advice": advice
+        }

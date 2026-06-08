@@ -43,3 +43,17 @@ class RecurringTransactionCreate(BaseModel):
     frequency: str
 
     user_email: str
+
+class AdviceRequest(BaseModel):
+
+    income: float
+
+    expense: float
+
+    savings_rate: float
+
+    highest_category: str
+
+    goal_name: str
+
+    goal_amount: float
