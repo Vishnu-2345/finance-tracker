@@ -9,11 +9,18 @@ from jose import jwt
 from datetime import datetime, timedelta
 
 from database import engine, SessionLocal
-from models import Base, Transaction, Budget, SavingsGoal
+from models import (
+    Base,
+    Transaction,
+    Budget,
+    SavingsGoal,
+    RecurringTransaction
+)
 from schemas import (
     TransactionCreate,
     BudgetCreate,
     SavingsGoalCreate
+    RecurringTransactionCreate
 )
 
 # ====================================
@@ -438,4 +445,66 @@ def get_goals(email: str):
         return goals
 
     finally:
+        db.close()
+
+# ====================================
+# ADD RECURRING TRANSACTION
+# ====================================
+
+@app.post("/recurring")
+
+def add_recurring(
+    recurring: RecurringTransactionCreate
+):
+
+    db = SessionLocal()
+
+    try:
+
+        new_recurring = RecurringTransaction(
+            title=recurring.title,
+            amount=recurring.amount,
+            category=recurring.category,
+            type=recurring.type,
+            frequency=recurring.frequency,
+            user_email=recurring.user_email
+        )
+
+        db.add(new_recurring)
+
+        db.commit()
+
+        db.refresh(new_recurring)
+
+        return {
+            "message": "Recurring transaction added"
+        }
+
+    finally:
+
+        db.close()
+
+
+# ====================================
+# GET RECURRING TRANSACTIONS
+# ====================================
+
+@app.get("/recurring/{email}")
+
+def get_recurring(email: str):
+
+    db = SessionLocal()
+
+    try:
+
+        recurring = db.query(
+            RecurringTransaction
+        ).filter(
+            RecurringTransaction.user_email == email
+        ).all()
+
+        return recurring
+
+    finally:
+
         db.close()

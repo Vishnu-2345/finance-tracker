@@ -76,3 +76,21 @@ class SavingsGoal(Base):
     target_amount = Column(Float)
 
     user_email = Column(String(100))
+
+class RecurringTransaction(Base):
+
+    __tablename__ = "recurring_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    title = Column(String)
+
+    amount = Column(Float)
+
+    category = Column(String)
+
+    type = Column(String)
+
+    frequency = Column(String)
+
+    user_email = Column(String)

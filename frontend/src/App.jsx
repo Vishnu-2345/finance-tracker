@@ -842,6 +842,99 @@ const fetchGoals = async () => {
 
 </div>
 
+{/* SAVINGS GOALS */}
+
+<div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
+
+  <h2 className="text-2xl font-bold mb-6">
+    Savings Goals
+  </h2>
+
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+    <input
+      type="text"
+      placeholder="Goal Name"
+      value={goalName}
+      onChange={(e) =>
+        setGoalName(e.target.value)
+      }
+      className="p-3 rounded-lg bg-gray-700 outline-none"
+    />
+
+    <input
+      type="number"
+      placeholder="Target Amount"
+      value={targetAmount}
+      onChange={(e) =>
+        setTargetAmount(e.target.value)
+      }
+      className="p-3 rounded-lg bg-gray-700 outline-none"
+    />
+
+  </div>
+
+  <button
+    onClick={addGoal}
+    className="bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-xl"
+  >
+    Add Goal
+  </button>
+
+  <div className="mt-6">
+
+    {goals.map((goal) => {
+
+      const progress =
+        Math.min(
+          (currentSavings /
+            goal.target_amount) *
+            100,
+          100
+        );
+
+      return (
+
+        <div
+          key={goal.id}
+          className="mb-6"
+        >
+
+          <h3 className="font-bold text-lg">
+            {goal.goal_name}
+          </h3>
+
+          <p className="text-gray-300">
+            Target ₹{goal.target_amount}
+          </p>
+
+          <div className="w-full bg-gray-700 h-4 rounded-full mt-2">
+
+            <div
+              className="bg-green-500 h-4 rounded-full"
+              style={{
+                width: `${progress}%`
+              }}
+            />
+
+          </div>
+
+          <p className="mt-2 text-green-400">
+            {progress.toFixed(1)}%
+          </p>
+
+        </div>
+
+      );
+
+    })}
+
+  </div>
+
+</div>
+
+{/* PIE CHART */}
+
         {/* PIE CHART */}
 
         <div className="bg-gray-800 p-6 rounded-2xl shadow-lg mb-10">
@@ -896,6 +989,7 @@ const fetchGoals = async () => {
           </div>
 
         </div>
+
 
         {/* MONTHLY CHART */}
 

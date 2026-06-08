@@ -27,3 +27,17 @@ class SavingsGoalCreate(BaseModel):
     target_amount: float
 
     user_email: str
+
+class RecurringTransactionCreate(BaseModel):
+
+    title: str
+
+    amount: float
+
+    category: str
+
+    type: str
+
+    frequency: str
+
+    user_email: str
