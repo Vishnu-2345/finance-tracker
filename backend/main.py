@@ -103,6 +103,7 @@ def add_transaction(transaction: TransactionCreate):
             amount=transaction.amount,
             category=transaction.category,
             type=transaction.type,
+            frequency=transaction.frequency,
             user_email=transaction.user_email
         )
 
@@ -118,6 +119,7 @@ def add_transaction(transaction: TransactionCreate):
                 "amount": new_transaction.amount,
                 "category": new_transaction.category,
                 "type": new_transaction.type,
+                "frequency": new_transaction.frequency,
                 "user_email": new_transaction.user_email
             }
         }
@@ -204,6 +206,7 @@ def update_transaction(
         existing_transaction.amount = transaction.amount
         existing_transaction.category = transaction.category
         existing_transaction.type = transaction.type
+        existing_transaction.frequency = transaction.frequency
         existing_transaction.user_email = transaction.user_email
 
         db.commit()

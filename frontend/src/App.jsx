@@ -330,6 +330,8 @@ function App() {
         
       };
 
+      console.log("TRANSACTION DATA:", transactionData);
+
       try {
 
         if (isEditing) {
