@@ -468,6 +468,7 @@ def add_recurring(
             type=recurring.type,
             frequency=recurring.frequency,
             user_email=recurring.user_email
+            
         )
 
         db.add(new_recurring)

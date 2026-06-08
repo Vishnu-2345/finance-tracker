@@ -22,6 +22,8 @@ class Transaction(Base):
 
     user_email = Column(String(100))
 
+    frequency = Column(String(50), default="One Time")
+
     created_at = Column(
         DateTime,
         default=datetime.utcnow

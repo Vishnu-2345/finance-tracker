@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Login from "./components/Login";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 import {
   PieChart,
@@ -49,7 +51,10 @@ function App() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [type, setType] = useState("expense");
-
+  const [search, setSearch] = useState("");
+  const [frequency, setFrequency] =
+  useState("One Time");
+ 
   // =========================
   // EDIT STATES
   // =========================
@@ -317,14 +322,12 @@ function App() {
 
       const transactionData = {
         title,
-        amount:
-          parseFloat(amount),
+        amount: parseFloat(amount),
         category,
         type,
-        user_email:
-          localStorage.getItem(
-            "email"
-          )
+        frequency,
+        user_email: localStorage.getItem("email"),
+        
       };
 
       try {
@@ -376,6 +379,8 @@ function App() {
         setAmount("");
         setCategory("");
         setType("expense");
+        setFrequency("One Time");
+        
 
       } catch (error) {
 
@@ -543,12 +548,58 @@ const fetchGoals = async () => {
         transaction.type
       );
 
+      setFrequency(
+        transaction.frequency || "One Time"
+      );
+
       setEditId(
         transaction.id
       );
 
       setIsEditing(true);
     };
+    
+
+const exportToExcel = () => {
+
+  const worksheet =
+    XLSX.utils.json_to_sheet(
+      safeTransactions
+    );
+
+  const workbook =
+    XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    worksheet,
+    "Transactions"
+  );
+
+  const excelBuffer =
+    XLSX.write(
+      workbook,
+      {
+        bookType: "xlsx",
+        type: "array"
+      }
+    );
+
+  const fileData =
+    new Blob(
+      [excelBuffer],
+      {
+        type:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      }
+    );
+
+  saveAs(
+    fileData,
+    "transactions.xlsx"
+  );
+
+};
 
   // =========================
   // LOGOUT
@@ -596,9 +647,20 @@ const fetchGoals = async () => {
 
         <div className="flex justify-between items-center mb-10">
 
-          <h1 className="text-5xl font-bold">
-            Finance Tracker
-          </h1>
+          <div>
+
+  <h1 className="text-5xl font-bold">
+    Finance Tracker
+  </h1>
+
+  <button
+    onClick={exportToExcel}
+    className="mt-3 bg-green-500 hover:bg-green-600 px-4 py-2 rounded-lg"
+  >
+    Export Excel
+  </button>
+
+</div>
 
           <button
             onClick={logout}
@@ -700,6 +762,25 @@ const fetchGoals = async () => {
               }
               className="p-3 rounded-lg bg-gray-700 outline-none"
             />
+            <select
+  value={frequency}
+  onChange={(e) =>
+    setFrequency(
+      e.target.value
+    )
+  }
+  className="p-3 rounded-lg bg-gray-700 outline-none"
+>
+
+  <option>One Time</option>
+
+  <option>Monthly</option>
+
+  <option>Weekly</option>
+
+  <option>Yearly</option>
+
+</select>
 
             <select
               value={type}
@@ -720,6 +801,7 @@ const fetchGoals = async () => {
               </option>
 
             </select>
+        
 
           </div>
 
@@ -1089,6 +1171,15 @@ const fetchGoals = async () => {
           <h2 className="text-3xl font-bold mb-6">
             Transactions
           </h2>
+          <input
+          type="text"
+          placeholder="Search Transaction..."
+          value={search}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
+          className="w-full p-3 mb-4 rounded-lg bg-gray-700 outline-none"
+          />
 
           <div className="space-y-4">
 
@@ -1100,80 +1191,82 @@ const fetchGoals = async () => {
 
             ) : (
 
-              safeTransactions.map(
-                (
-                  transaction
-                ) => (
+              safeTransactions
+  .filter(
+    (transaction) =>
+      transaction.title
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        ) ||
+      transaction.category
+        .toLowerCase()
+        .includes(
+          search.toLowerCase()
+        )
+  )
+  .map(
+    (transaction) => (
 
-                  <div
-                    key={
-                      transaction.id
-                    }
-                    className="bg-gray-800 p-5 rounded-2xl shadow-lg flex justify-between items-center"
-                  >
+      <div
+        key={transaction.id}
+        className="bg-gray-800 p-5 rounded-2xl shadow-lg flex justify-between items-center"
+      >
 
-                    <div>
+        <div>
 
-                      <h3 className="text-xl font-semibold">
-                        {
-                          transaction.title
-                        }
-                      </h3>
+          <h3 className="text-xl font-semibold">
+            {transaction.title}
+          </h3>
 
-                      <p className="text-gray-400">
-                        Category:
-                        {" "}
-                        {
-                          transaction.category
-                        }
-                      </p>
+          <p className="text-gray-400">
+            Category: {transaction.category}
+          </p>
 
-                      <p
-                        className={
-                          transaction.type ===
-                          "income"
-                            ? "text-green-400 text-lg font-semibold"
-                            : "text-red-400 text-lg font-semibold"
-                        }
-                      >
-                        ₹
-                        {
-                          transaction.amount
-                        }
-                      </p>
+          <p className="text-gray-400">
+             Frequency: {transaction.frequency}
+          </p>
 
-                    </div>
+          <p
+            className={
+              transaction.type === "income"
+                ? "text-green-400 text-lg font-semibold"
+                : "text-red-400 text-lg font-semibold"
+            }
+          >
+            ₹{transaction.amount}
+          </p>
 
-                    <div className="flex gap-3">
+        </div>
 
-                      <button
-                        onClick={() =>
-                          editTransaction(
-                            transaction
-                          )
-                        }
-                        className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-lg"
-                      >
-                        Edit
-                      </button>
+        <div className="flex gap-3">
 
-                      <button
-                        onClick={() =>
-                          deleteTransaction(
-                            transaction.id
-                          )
-                        }
-                        className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg"
-                      >
-                        Delete
-                      </button>
+          <button
+            onClick={() =>
+              editTransaction(transaction)
+            }
+            className="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded-lg"
+          >
+            Edit
+          </button>
 
-                    </div>
-
-                  </div>
-
-                )
+          <button
+            onClick={() =>
+              deleteTransaction(
+                transaction.id
               )
+            }
+            className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      </div>
+
+    )
+  )
             )}
 
           </div>

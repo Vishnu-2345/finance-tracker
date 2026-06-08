@@ -12,6 +12,8 @@ class TransactionCreate(BaseModel):
 
     user_email: str
 
+    frequency: str
+
 class BudgetCreate(BaseModel):
 
     category: str
