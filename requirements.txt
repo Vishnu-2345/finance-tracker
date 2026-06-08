@@ -5,3 +5,6 @@ pymysql
 passlib[bcrypt]
 bcrypt==4.0.1
 python-jose
+
+google-generativeai
+python-dotenv
